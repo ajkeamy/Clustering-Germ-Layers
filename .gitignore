@@ -1,0 +1,9 @@
+*.log
+*.ipynb
+*.csv
+!data_dictionary.csv
+
+
+.ipynb_checkpoints
+__pycache__
+Notes
