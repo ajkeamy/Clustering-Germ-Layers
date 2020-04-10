@@ -1,0 +1,10 @@
+{
+    "chrome_driver_location" : "C:/Program Files/Drivers/chromedriver.exe",
+    "headless" : true,
+    "data_dict": "data_dictionary.csv",
+    "file_names" : ["Q1.csv", "Q2.csv", "Q3.csv"],
+    "sort_using" : ["Size"],
+    "sort_direction": ["uP"],
+    "samples": [133 ,372, 258],
+    "keep_files": [false, false, false]
+}

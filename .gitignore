@@ -3,6 +3,9 @@
 *.csv
 !data_dictionary.csv
 
+*.json
+!param_config.json
+!query_config.json
 
 .ipynb_checkpoints
 __pycache__

@@ -1,6 +1,0 @@
-{
-    "chrome_driver_location" : "C:/Program Files/Drivers/chromedriver.exe",
-    "sort_using" : ["Size", "File Name"],
-    "sort_direction": ["UP", "uP"],
-    "samples": [133 ,133,133]
-}
