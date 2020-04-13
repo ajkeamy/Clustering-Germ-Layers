@@ -1,9 +1,18 @@
 *.log
 *.ipynb
+*.gz
+*.txt
+
 *.csv
 !data_dictionary.csv
 
+*.json
+!param_config.json
+!query_config.json
+
+Notes
+dd_test
+tar_to_maf.py
 
 .ipynb_checkpoints
 __pycache__
-Notes
