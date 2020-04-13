@@ -3,8 +3,10 @@ import pandas as pd
 import json
 
 import sys
-import os
 import glob
+import os
+import tarfile
+import shutil
 
 import math
 import re
@@ -12,11 +14,27 @@ import re
 ################################## Added functions to avoid imports
 def json_load(filename):
     """ Allows me to put all non-selenium imports in this file """
-    assert os.path.isfile(filename), f"{filename} does not exist"
+    assert check_file(filename), f"{filename} does not exist"
     return json.load(open(filename))
 
 def re_search(pattern, text):
     return re.search(pattern, text)
+
+def glob_glob(pattern):
+    return glob.glob(pattern)
+
+def check_driver_location(path):
+    assert check_file(path), "Invalid Chrome Driver Location"
+    assert path.endswith('exe'), "Chrome Driver needs to be an executable"
+
+def check_file(path, dir = False, make = False):
+    if dir:
+        present = os.path.isdir(path)
+        if make and (not present):
+            os.mkdir(path)
+            present = True
+        return present
+    return os.path.isfile(path)
 
 
 ################################## Data Dictionary Creation Functions
@@ -67,10 +85,27 @@ def create_data_dict(info_lst, data_file):
     df.to_csv(data_file, index = False)
 
 
-######################### List Partitioning
+######################### List Partitioning / Number Array Conversion
 def split_lst(lst, partition_size):
     return [lst[i:i + partition_size] for i in
             range(0, len(lst), partition_size)]
+
+def array_conv(arr):
+    comb = []
+    for item in arr:
+        lst = []
+        for ind in item.split(','):
+            try:
+                ind = list( map(int, re.split('-|:', ind) ) )
+            except ValueError:
+                assert False, "Example of csv_ind: ['1-10,15', '1-5']"
+
+            if len(ind) > 1:
+                lst += range(ind[0], ind[1]+1)
+            else:
+                lst += ind
+        comb.append(set(lst))
+    return comb
 
 
 ################################ Query functions
@@ -105,7 +140,7 @@ def query_assemble(queries, data_dict = None):
     assert isinstance(queries, dict), "Invalid file type. Dictionary object needed"
 
     if data_dict is not None:
-        assert os.path.isfile(data_dict), "File does not exist"
+        assert check_file(data_dict), f"\"{data_dict}\" does not exist"
         data_df = pd.read_csv(data_dict, header = 0)
 
     queries_lst = []
@@ -154,9 +189,6 @@ def pre_scraping_config_check(params, query_dict):
                         f"\"{item}\" do not match to query length")
         check_dict[item] = present
 
-    if 'headless' in params.keys():
-        check_dict["headless"] = True
-
     return check_dict
 
 
@@ -189,20 +221,27 @@ def download_dataframes(page_source, links, df_name):
     url_df = create_url_df(links, metadata_df.columns, to_csv = url_name)
     return metadata_df, url_df
 
-def combine_dataframes(df_name, num_samples, keep_files = True):
+def combine_dataframes(df_name, num_samples, keep_files, together = False):
     def read_concat(df_name):
-        file_lst = glob.glob(f"*_{df_name}.csv")
+        file_lst = glob_glob(f"*_{df_name}.csv")
         assert file_lst != [], f"No files with name: {df_name}"
         df_lst = [pd.read_csv(file, header = 0) for file in file_lst]
         df = pd.concat(df_lst).reset_index(drop = True).iloc[:num_samples]
 
-        if keep_files == False:
-            [os.system(f"rm -r -f {i}") for i in file_lst]
-
-        df.to_csv(f'{df_name}.csv', index = False)
+        if keep_files: ### if keep, make combined files to keep as well
+            df.to_csv(f'{df_name}.csv', index = False)
+        ### delete starting files as they are already in either seperate
+            ## meta and url CSVs or in the combined CSV
+        [os.system(f"rm -r -f {file}") for file in file_lst]
         return df
 
-    return read_concat(df_name), read_concat(f"{df_name}_url")
+    meta, url = read_concat(df_name), read_concat(f"{df_name}_url")
+    if together:
+        name = f'{df_name}.csv'
+        if keep_files:
+            name = f'{df_name}_comb.csv'
+        pd.concat([meta, url], axis=1).to_csv(name, index = False)
+    return meta, url
 
 
 ############################ Url Altering Functions through String Manipulation
@@ -226,3 +265,44 @@ def str_get_new_urls(current_url, num_samples, size = 100):
     for offset in range(amt):
         new_urls.append(f'{start}files_offset={offset*size}&{end}')
     return new_urls
+
+
+########################### Data Download from CSVs
+def pandas_reindex(path, ind):
+    df = pd.read_csv(path)
+    return df.reindex(index = ind).dropna().loc[:, "File Name_Url"]
+
+def maf_extract_move(maf_dir, target_dir):
+    assert os.listdir(maf_dir), f'{maf_dir} is empty'
+    if not os.path.isdir(target_dir):
+        os.mkdir(target_dir)
+
+    for file in os.listdir(maf_dir):
+        if file.endswith('.tar.gz'):
+            try:
+                tar = tarfile.open(maf_dir + '/'+ file, "r:gz")
+                tar.extractall(path = maf_dir)
+                tar.close()
+            except PermissionError:
+                print(f'{file} already inside of {maf_dir}')
+
+    subdirs = [created_dir for created_dir in os.listdir(maf_dir)
+               if os.path.isdir(os.path.join(maf_dir, created_dir))]
+
+    for sub in subdirs:
+        curr_dir = maf_dir + '/' + sub
+        for file in os.listdir(curr_dir):
+            if file.endswith('.maf.gz'):
+                renamed_file = curr_dir + '/' + file[:-7] +'_annotations.txt'
+                if os.path.isfile(renamed_file):
+                    print(f'{file} already created')
+                else:
+                    os.rename(curr_dir + '/annotations.txt', renamed_file)
+
+    for sub in subdirs:
+        curr_dir = maf_dir + '/' + sub
+        for file in os.listdir(curr_dir):
+            if os.path.isfile(target_dir + '/' + file):
+                print(f'{file} already exists in {target_dir}')
+            else:
+                shutil.move(curr_dir + '/' + file, target_dir)

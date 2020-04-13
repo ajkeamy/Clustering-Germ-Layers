@@ -1,10 +1,19 @@
 {
     "chrome_driver_location" : "C:/Program Files/Drivers/chromedriver.exe",
-    "headless" : true,
-    "data_dict": "data_dictionary.csv",
+    "headless" : false,
+    "data_dict": "references/data_dictionary.csv",
     "file_names" : ["Q1.csv", "Q2.csv", "Q3.csv"],
-    "sort_using" : ["Size"],
-    "sort_direction": ["uP"],
+    "sort_using" : ["Size", "Project"],
+    "sort_direction": ["uP", "up"],
     "samples": [133 ,372, 258],
-    "keep_files": [false, false, false]
+    "keep_files": [false, false, false],
+    "together" : true,
+    "time_wait" : 2,
+    "implicit_wait" : 3,
+    "after_sort_wait" : 10,
+    "manual_csv_files" : ["Q1.csv"],
+    "download_inds" : ["1-2,7-12"],
+    "keep_tar" : true,
+    "tar_dir" : "C:/Users/Shonak/Documents/GitHub/DSC180B/Capstone/test/tars",
+    "maf_dir": "C:/Users/Shonak/Documents/GitHub/DSC180B/Capstone/test/mafs"
 }

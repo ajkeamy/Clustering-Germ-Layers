@@ -8,8 +8,9 @@ from cleaning import *
 
 time_wait = 3
 implicit_wait = 3
+after_sort_wait = 6
 
-######################################## generic functions
+############################### functions used in multiple command line actions
 def button_click(driver, css_tag, sleep = True):
     try:
         box = driver.find_element_by_css_selector(css_tag)
@@ -27,6 +28,56 @@ def accept_gov_warning(driver, start = False):
 
     ## accept gov warning when entering page
     button_click(driver, ".undefined.button.css-oe4so")
+
+def time_change(params):
+    for key,item in params.items():
+        if key == 'time_wait':
+            global time_wait;           time_wait = item
+        elif key == 'implicit_wait':
+            global implicit_wait;       implicit_wait = item
+        elif key == 'after_sort_wait':
+            global after_sort_wait;     after_sort_wait = item
+
+
+############################### chrome initializations before running
+def convert_to_headless(chrome_options):
+    ## browser is "headless" meaning it doesn't appear when running
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument("--window-size=1920x1080")
+    chrome_options.add_argument('log-level=3') ## suppresses info msgs
+    return chrome_options
+
+def chrome_warning():
+    print('WARNING: CURRENTLY ONLY WORKS ON COMPUTERS WITH CHROME')
+    print("If inappropriate driver for chrome version, go to https://" + \
+          "chromedriver.chromium.org/downloads to download the right one.")
+
+def chrome_setup(params, download = False):
+    chrome_warning()
+
+    headless_check = ('headless' in params.keys()) and (params['headless'])
+    if headless_check or download:
+        chrome_options = Options()
+        if headless_check and download:
+            chrome_options = convert_to_headless(chrome_options)
+            tar_path = params['tar_dir'].replace('/', '\\')
+            check_file(tar_path, True, True)
+            prefs = {"download.default_directory" : tar_path}
+            chrome_options.add_experimental_option('prefs', prefs)
+        elif download:
+            tar_path = params['tar_dir'].replace('/', '\\')
+            check_file(tar_path, True, True)
+            prefs = {"download.default_directory" : tar_path}
+            chrome_options.add_experimental_option('prefs', prefs)
+        else:
+            chrome_options = convert_to_headless(chrome_options)
+    else:
+        chrome_options = None
+
+    driver = webdriver.Chrome(options = chrome_options,
+                              executable_path = params['chrome_driver_location'])
+    accept_gov_warning(driver, True)
+    return driver
 
 
 ################################## query functions
@@ -66,20 +117,33 @@ def results_check(driver, query, first_page = True):
         if first_page:
             print(f"Current query \"{query}\" has no results.")
         else:
-            print(f"Current query \"{query}\" does not have enough results to "+
+            print(f"\nCurrent query \"{query}\" does not have enough results to "+
                   "satisfy num_samples. \nInstead, table will only go up to " +
-                  "maximum possible results.")
+                  "maximum possible results.\n")
         return False
     return True
 
 
 ############################# data dictionary creator
-def get_keywords(driver_loc, data_file):
-    assert driver_loc.endswith('.exe'), "Invalid executable. Need correct exe path"
-    assert data_file.endswith('.csv'), "Unusable name. Format should be \"name.csv\""
+def get_keywords(param_file, data_file = None):
+    assert param_file.endswith('.json'), ("Invalid file chosen. Param config " +
+                                             "needs to be a json file.")
 
-    driver = webdriver.Chrome(executable_path = driver_loc)
-    accept_gov_warning(driver, True)
+    params = json_load(param_file)
+    check_driver_location(params['chrome_driver_location'])
+    time_change(params)
+
+    if check_file(params['data_dict']) and data_file is None:
+        print(f"Data Dictionary file \"{params['data_dict']}\" already exists.")
+        return
+    if (data_file is not None):
+        assert data_file.endswith('.csv'), ("Unusable name. Format should be " +
+                                            "\"name.csv\"")
+        if check_file(data_file):
+            print(f"Data Dictionary file \"{data_file}\" already exists.")
+            return
+
+    driver = chrome_setup(params)
 
     #### vague query entry that results in all autocompletions occurring
     query = 'and '
@@ -117,7 +181,11 @@ def get_keywords(driver_loc, data_file):
             id_box.send_keys(Keys.DOWN)
 
     driver.close()
-    create_data_dict(info_lst, data_file)
+    if data_file is None:
+        create_data_dict(info_lst, params['data_dict'])
+    else:
+        create_data_dict(info_lst, data_file)
+    print("FINISHED")
 
 
 ####################### data layout changes (url manipulation using selenium)
@@ -213,8 +281,8 @@ def sort_data(driver, param_config):
                 assert False, "Sort Directions should be either UP or DOWN"
 
 
-############# ran by each query and assembles dataframe
-def perform_query(driver, query, params, df_name, num_samples = 150, keep_files = True):
+########################### ran by each query and assembles dataframe
+def perform_query(driver, query, params, df_name, num_samples = 150, keep_files = False):
     """
     @param df_name: should be name excluding the extension
     """
@@ -246,7 +314,7 @@ def perform_query(driver, query, params, df_name, num_samples = 150, keep_files 
         if results_check(driver, query, False) == False:  break
 
         sort_data(driver, params)
-        time.sleep(time_wait*3) ## needs longer time to sort so doesn't break
+        time.sleep(after_sort_wait) ## needs longer time to sort so doesn't break
 
         ### table grabbing
         table = driver.find_element_by_id("repository-files-table")
@@ -263,7 +331,11 @@ def perform_query(driver, query, params, df_name, num_samples = 150, keep_files 
         ### switch to starting tab
         driver.switch_to.window(driver.window_handles[0])
 
-    combine_dataframes(df_name[:-4], num_samples, keep_files)
+    if 'together' in params.keys():
+        combine_dataframes(df_name[:-4], num_samples, keep_files,
+                           params['together'])
+    else:
+        combine_dataframes(df_name[:-4], num_samples, keep_files)
 
 
 ############ Combines all functions to scrape URLs using configuration files
@@ -278,27 +350,21 @@ def tcga_scrape(param_file, query_file):
 
     params = json_load(param_file)
     queries = json_load(query_file)
+    check_driver_location(params['chrome_driver_location'])
 
     query_dict = query_config(queries)
-    assembled_query = query_assemble(query_dict, params['data_dict'])
+
+    data_dict = None
+    if 'data_dict' in params.keys():
+        data_dict = params['data_dict']
+    assembled_query = query_assemble(query_dict, data_dict)
 
     present_dict = pre_scraping_config_check(params, query_dict)
+    time_change(params)
 
     ########## Reached here means config files are valid
 
-    print('WARNING: CURRENTLY ONLY WORKS ON COMPUTERS WITH CHROME')
-    chrome_options = None
-    if present_dict['headless']:
-        if params['headless']:
-            chrome_options = Options()
-            ## browser is "headless" meaning it doesn't appear when running
-            chrome_options.add_argument("--headless")
-            chrome_options.add_argument("--window-size=1920x1080")
-            chrome_options.add_argument('log-level=3') ## suppresses info msgs
-
-    driver = webdriver.Chrome(chrome_options=chrome_options,
-                              executable_path = params['chrome_driver_location'])
-    accept_gov_warning(driver, True)
+    driver = chrome_setup(params)
 
     for index, query in enumerate(assembled_query):
         name = str(f'Query_{index}.csv')
@@ -320,5 +386,60 @@ def tcga_scrape(param_file, query_file):
     print("FINISHED")
 
 
+#################################### Download Data
+def download_data(param_file, csv_patterns = None):
+    csv_lst = []
+
+    params = json_load(param_file)
+    if 'manual_csv_files' in params.keys():
+        csv_lst = set(params['manual_csv_files'])
+        csv_lst = [file for file in csv_lst if check_file(file)]
+
+    if csv_patterns:
+        for pattern in csv_patterns:
+            csv_lst += glob_glob(pattern)
+
+        csv_lst = [file for file in csv_lst if file.endswith('.csv')]
+        csv_lst = list(set(csv_lst))
+
+    assert csv_lst != [], 'No matching CSV files found by pattern or by json.'
+
+    time_change(params)
+    check_driver_location(params['chrome_driver_location'])
+    driver = chrome_setup(params, download = True)
+    downloader(driver, params, csv_lst)
+
+def downloader(driver, params, csv_lst):
+    tar_dir, maf_dir = params['tar_dir'], params['maf_dir']
+    keep_tar_files = params['keep_tar']
+
+    assert check_file(tar_dir, True), f'{tar_dir} does not exist'
+    assert len(params['download_inds']) == len(csv_lst), (
+                "Download indicies do not match to csv_files")
+
+    for index, ind in enumerate(array_conv(params['download_inds'])):
+        assert csv_lst[index].endswith('csv'), "Invalid File "
+        links = pandas_reindex(csv_lst[index],ind)
+
+        for link in links:
+            driver.get(link)
+            driver.implicitly_wait(implicit_wait)
+
+            accept_gov_warning(driver)
+            button_click(driver, ".test-download-button.button")
+
+    driver.close()
+    maf_extract_move(tar_dir, maf_dir)
+
+    if keep_tar_files:
+        [os.system(f'rm -r -f {tar_dir}/{file}') for file in os.listdir(tar_dir)
+         if not file.endswith('.tar.gz')]
+    else:
+        [os.system(f'rm -r -f {tar_dir}/{file}') for file in os.listdir(tar_dir)]
+
+
+
 if __name__ == "__main__":
-    tcga_scrape('param_config.json', 'query_config.json')
+    get_keywords('config/param_config.json')
+    tcga_scrape('config/param_config.json', 'config/query_config.json')
+    download_data('config/param_config.json', ['Query_0.csv', '*.csv'])
