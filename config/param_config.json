@@ -1,5 +1,5 @@
 {
-    "chrome_driver_location" : "C:/Program Files/Drivers/chromedriver.exe",
+    "chrome_driver_location" : "chromedriver.exe",
     "headless" : false,
     "data_dict": "references/data_dictionary.csv",
     "file_names" : ["Q1.csv", "Q2.csv", "Q3.csv"],
