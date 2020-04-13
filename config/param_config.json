@@ -14,6 +14,6 @@
     "manual_csv_files" : ["Q1.csv"],
     "download_inds" : ["1-2,7-12"],
     "keep_tar" : true,
-    "tar_dir" : "C:/Users/Shonak/Documents/GitHub/DSC180B/Capstone/test/tars",
-    "maf_dir": "C:/Users/Shonak/Documents/GitHub/DSC180B/Capstone/test/mafs"
+    "tar_dir" : "test/tars",
+    "maf_dir": "test/mafs"
 }
