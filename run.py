@@ -1,10 +1,8 @@
-#!C:\Users\Shonak\capstone_180a\Scripts\python.exe
 
 import os
 import sys
 # import json
 
-sys.path.insert(0, f"{os.path.join(sys.path[0], 'src')}")
 sys.path.insert(0, 'src')
 from selenium_functions import get_keywords, tcga_scrape, download_data
 

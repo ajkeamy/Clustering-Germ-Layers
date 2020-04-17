@@ -1,8 +1,8 @@
 {
-  "data_category" : ["Simple Nucleotide Variation", 3],
-  "data_format" : ["maf", 1, "vcf", 2],
-  "cases.primary_site" : ["bronchus and lung", 3],
-  "file_size_min": ["> 1000", 3],
-  "file_size_max": ["< 10MB", 3],
-  "access" : ["open", 3]
+  "data_category" : ["Simple Nucleotide Variation", 2],
+  "data_format" : ["maf", 1, "vcf", 1],
+  "cases.primary_site" : ["bronchus and lung", 2],
+  "file_size_min": ["> 1000", 2],
+  "file_size_max": ["< 10MB", 2],
+  "access" : ["open", 2]
 }
