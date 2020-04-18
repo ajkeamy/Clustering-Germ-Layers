@@ -1,3 +1,4 @@
+
 import pandas as pd
 import json
 
@@ -27,6 +28,7 @@ def check_driver_location(path):
     assert path.endswith('exe'), "Chrome Driver needs to be an executable"
 
 def check_file(path, dir = False, make = False):
+    path = os.path.join(*path.split('/'))
     if dir:
         present = os.path.isdir(path)
         if make and (not present):
@@ -198,7 +200,7 @@ def create_metadata_df(page_source, to_csv = None):
     metadata_df = metadata_df.drop(labels = ['Add all files to cart'], axis = 1)
 
     if to_csv is not None:
-        metadata_df.to_csv(to_csv, index = False)
+        metadata_df.to_csv(os.path.join(*to_csv.split('/')), index = False)
     return metadata_df
 
 def create_url_df(links, metadata_cols, to_csv = None):
@@ -206,7 +208,7 @@ def create_url_df(links, metadata_cols, to_csv = None):
                 columns = [x +"_Url" for x in metadata_cols[1:4]])
 
     if to_csv is not None:
-        url_df.to_csv(to_csv, index = False)
+        url_df.to_csv(os.path.join(*to_csv.split('/')), index = False)
     return url_df
 
 def download_dataframes(page_source, links, df_name):
@@ -220,26 +222,22 @@ def download_dataframes(page_source, links, df_name):
     url_df = create_url_df(links, metadata_df.columns, to_csv = url_name)
     return metadata_df, url_df
 
-def combine_dataframes(df_name, num_samples, keep_files, together = False):
+def combine_dataframes(df_name, num_samples):
     def read_concat(df_name):
         file_lst = glob_glob(f"*_{df_name}.csv")
         assert file_lst != [], f"No files with name: {df_name}"
         df_lst = [pd.read_csv(file, header = 0) for file in file_lst]
         df = pd.concat(df_lst).reset_index(drop = True).iloc[:num_samples]
 
-        if keep_files: ### if keep, make combined files to keep as well
-            df.to_csv(f'{df_name}.csv', index = False)
         ### delete starting files as they are already in either seperate
             ## meta and url CSVs or in the combined CSV
         [os.system(f"rm -r -f {file}") for file in file_lst]
         return df
 
     meta, url = read_concat(df_name), read_concat(f"{df_name}_url")
-    if together:
-        name = f'{df_name}.csv'
-        if keep_files:
-            name = f'{df_name}_comb.csv'
-        pd.concat([meta, url], axis=1).to_csv(name, index = False)
+
+    pd.concat([meta, url], axis=1).to_csv(f'{df_name}.csv', index = False)
+
     return meta, url
 
 
@@ -279,7 +277,7 @@ def maf_extract_move(maf_dir, target_dir):
     for file in os.listdir(maf_dir):
         if file.endswith('.tar.gz'):
             try:
-                tar = tarfile.open(maf_dir + '/'+ file, "r:gz")
+                tar = tarfile.open(os.path.join(maf_dir, file), "r:gz")
                 tar.extractall(path = maf_dir)
                 tar.close()
             except PermissionError:
@@ -289,19 +287,19 @@ def maf_extract_move(maf_dir, target_dir):
                if os.path.isdir(os.path.join(maf_dir, created_dir))]
 
     for sub in subdirs:
-        curr_dir = maf_dir + '/' + sub
+        curr_dir = os.path.join(maf_dir, sub)
         for file in os.listdir(curr_dir):
             if file.endswith('.maf.gz'):
-                renamed_file = curr_dir + '/' + file[:-7] +'_annotations.txt'
+                renamed_file = os.path.join(curr_dir, file[:-7] + '_annotations.txt')
                 if os.path.isfile(renamed_file):
                     print(f'{file} already created')
                 else:
-                    os.rename(curr_dir + '/annotations.txt', renamed_file)
+                    os.rename(os.path.join(curr_dir, 'annotations.txt'), renamed_file)
 
     for sub in subdirs:
-        curr_dir = maf_dir + '/' + sub
+        curr_dir = os.path.join(maf_dir, sub)
         for file in os.listdir(curr_dir):
-            if os.path.isfile(target_dir + '/' + file):
+            if os.path.isfile(os.path.join(target_dir,  file)):
                 print(f'{file} already exists in {target_dir}')
             else:
-                shutil.move(curr_dir + '/' + file, target_dir)
+                shutil.move(os.path.join(curr_dir, file), target_dir)

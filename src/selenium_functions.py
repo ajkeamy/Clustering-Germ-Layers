@@ -58,22 +58,18 @@ def chrome_setup(params, download = False):
     headless_check = ('headless' in params.keys()) and (params['headless'])
     if headless_check or download:
         chrome_options = Options()
-        if headless_check and download:
+        if headless_check:
             chrome_options = convert_to_headless(chrome_options)
+        if download:
             tar_path = params['tar_dir'].replace('/', '\\')
             check_file(tar_path, True, True)
-            prefs = {"download.default_directory" : tar_path}
+            prefs = {"download.default_directory" : os.path.abspath(tar_path)}
             chrome_options.add_experimental_option('prefs', prefs)
-        elif download:
-            tar_path = params['tar_dir'].replace('/', '\\')
-            check_file(tar_path, True, True)
-            prefs = {"download.default_directory" : tar_path}
-            chrome_options.add_experimental_option('prefs', prefs)
-        else:
-            chrome_options = convert_to_headless(chrome_options)
     else:
         chrome_options = None
 
+    time_change(params)
+    check_driver_location(params['chrome_driver_location'])
     driver = webdriver.Chrome(options = chrome_options,
                               executable_path = params['chrome_driver_location'])
     accept_gov_warning(driver, True)
@@ -130,8 +126,6 @@ def get_keywords(param_file, data_file = None):
                                              "needs to be a json file.")
 
     params = json_load(param_file)
-    check_driver_location(params['chrome_driver_location'])
-    time_change(params)
 
     if check_file(params['data_dict']) and data_file is None:
         print(f"Data Dictionary file \"{params['data_dict']}\" already exists.")
@@ -253,8 +247,12 @@ def sort_data(driver, param_config):
     sort_table = driver.find_elements_by_css_selector(f"div[style = \"{loc}\"]")
 
     if sort_table == []:
-        button_click(driver, "button[class=\"undefined button css-14x0dj7\"]")
+        driver.find_elements_by_css_selector("span[class=\"undefined dropdown\"]")[1].click()
         sort_table = driver.find_elements_by_css_selector(f"div[style = \"{loc}\"]")
+        if sort_table == []:
+            button_click(driver, "button[class=\"undefined button css-14x0dj7\"]")
+            sort_table = driver.find_elements_by_css_selector(f"div[style = \"{loc}\"]")
+
     sort_table = sort_table[0]
 
     elems = sort_table.find_elements_by_tag_name('div')
@@ -282,7 +280,7 @@ def sort_data(driver, param_config):
 
 
 ########################### ran by each query and assembles dataframe
-def perform_query(driver, query, params, df_name, num_samples = 150, keep_files = False):
+def perform_query(driver, query, params, df_name, num_samples = 150):
     """
     @param df_name: should be name excluding the extension
     """
@@ -331,11 +329,7 @@ def perform_query(driver, query, params, df_name, num_samples = 150, keep_files 
         ### switch to starting tab
         driver.switch_to.window(driver.window_handles[0])
 
-    if 'together' in params.keys():
-        combine_dataframes(df_name[:-4], num_samples, keep_files,
-                           params['together'])
-    else:
-        combine_dataframes(df_name[:-4], num_samples, keep_files)
+    combine_dataframes(df_name[:-4], num_samples)
 
 
 ############ Combines all functions to scrape URLs using configuration files
@@ -350,7 +344,6 @@ def tcga_scrape(param_file, query_file):
 
     params = json_load(param_file)
     queries = json_load(query_file)
-    check_driver_location(params['chrome_driver_location'])
 
     query_dict = query_config(queries)
 
@@ -360,7 +353,6 @@ def tcga_scrape(param_file, query_file):
     assembled_query = query_assemble(query_dict, data_dict)
 
     present_dict = pre_scraping_config_check(params, query_dict)
-    time_change(params)
 
     ########## Reached here means config files are valid
 
@@ -369,16 +361,11 @@ def tcga_scrape(param_file, query_file):
     for index, query in enumerate(assembled_query):
         name = str(f'Query_{index}.csv')
         if present_dict["file_names"]:
-            name = params["file_names"][index]
+            name = os.path.join(*params["file_names"][index].split('/'))
 
         ### which combination of defaults to use based on parameters
-        if present_dict["samples"] and present_dict['keep_files']:
-            perform_query(driver, query, params, name, params['samples'][index],
-                          params['keep_files'][index])
-        elif present_dict["samples"]:
+        if present_dict["samples"]:
             perform_query(driver, query, params, name, params['samples'][index])
-        elif present_dict['keep_files']:
-            perform_query(driver, query, params, name, params['keep_files'][index])
         else:
             perform_query(driver, query, params, name)
 
@@ -391,10 +378,6 @@ def download_data(param_file, csv_patterns = None):
     csv_lst = []
 
     params = json_load(param_file)
-    if 'manual_csv_files' in params.keys():
-        csv_lst = set(params['manual_csv_files'])
-        csv_lst = [file for file in csv_lst if check_file(file)]
-
     if csv_patterns:
         for pattern in csv_patterns:
             csv_lst += glob_glob(pattern)
@@ -402,15 +385,18 @@ def download_data(param_file, csv_patterns = None):
         csv_lst = [file for file in csv_lst if file.endswith('.csv')]
         csv_lst = list(set(csv_lst))
 
-    assert csv_lst != [], 'No matching CSV files found by pattern or by json.'
+    if 'manual_csv_files' in params.keys():
+        csv_lst = set(params['manual_csv_files'])
+        csv_lst = [file for file in csv_lst if check_file(file)]
 
-    time_change(params)
-    check_driver_location(params['chrome_driver_location'])
+    assert csv_lst != [], 'No matching CSV files found by pattern or by name.'
+
     driver = chrome_setup(params, download = True)
     downloader(driver, params, csv_lst)
 
 def downloader(driver, params, csv_lst):
-    tar_dir, maf_dir = params['tar_dir'], params['maf_dir']
+    tar_dir = os.path.join(*params['tar_dir'].split('/'))
+    maf_dir = os.path.join(*params['maf_dir'].split('/'))
     keep_tar_files = params['keep_tar']
 
     assert check_file(tar_dir, True), f'{tar_dir} does not exist'
@@ -432,10 +418,11 @@ def downloader(driver, params, csv_lst):
     maf_extract_move(tar_dir, maf_dir)
 
     if keep_tar_files:
-        [os.system(f'rm -r -f {tar_dir}/{file}') for file in os.listdir(tar_dir)
-         if not file.endswith('.tar.gz')]
+        [os.system(f'rm -r -f {os.path.join(tar_dir, file)}')
+         for file in os.listdir(tar_dir) if not file.endswith('.tar.gz')]
     else:
-        [os.system(f'rm -r -f {tar_dir}/{file}') for file in os.listdir(tar_dir)]
+        [os.system(f'rm -r -f {os.path.join(tar_dir, file)}')
+         for file in os.listdir(tar_dir)]
 
 
 

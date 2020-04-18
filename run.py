@@ -1,10 +1,13 @@
-#!C:\Users\Shonak\capstone_180a\Scripts\python.exe
+######### EXAMPLE COMMANDS
+## do these in order:
+    ## py run.py createDict config/param_config.json
+    ## py run.py queryData config/param_config.json config/query_config.json
+    ## py run.py downloadData config/param_config.json
 
 import os
 import sys
 # import json
 
-sys.path.insert(0, f"{os.path.join(sys.path[0], 'src')}")
 sys.path.insert(0, 'src')
 from selenium_functions import get_keywords, tcga_scrape, download_data
 
