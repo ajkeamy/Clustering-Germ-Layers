@@ -386,16 +386,17 @@ def download_data(param_file, csv_patterns = None):
     csv_lst = []
 
     params = json_load(param_file)
-    if csv_patterns:
-        for pattern in csv_patterns:
-            csv_lst += glob_glob(pattern)
-
-        csv_lst = [file for file in csv_lst if file.endswith('.csv')]
-        csv_lst = list(set(csv_lst))
 
     if 'manual_csv_files' in params.keys():
         csv_lst = set(params['manual_csv_files'])
         csv_lst = [file for file in csv_lst if check_file(file)]
+
+    if csv_patterns is not None:
+        for pattern in csv_patterns:
+            csv_lst += glob_glob(pattern)
+
+            csv_lst = [file for file in csv_lst if file.endswith('.csv')]
+            csv_lst = list(set(csv_lst))
 
     assert csv_lst != [], 'No matching CSV files found by pattern or by name.'
 
@@ -426,11 +427,11 @@ def downloader(driver, params, csv_lst):
     maf_extract_move(tar_dir, maf_dir)
 
     if keep_tar_files:
-        [os.remove(os.path.join(tar_dir, file)) for file in os.listdir(tar_dir)
-         if not file.endswith('.tar.gz')]
+        remove_file_dir(tar_dir, True, True)
+        remove_file_dir(tar_dir, False, True)
     else:
-        [os.remove(os.path.join(tar_dir, file)) for file in os.listdir(tar_dir)]
-
+        remove_file_dir(tar_dir, True)
+        remove_file_dir(tar_dir, False)
 
 
 if __name__ == "__main__":
