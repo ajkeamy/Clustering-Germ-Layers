@@ -1,4 +1,3 @@
-
 ######### EXAMPLE COMMANDS
 ## do these in order:
     ## py run.py createDict config/param_config.json
