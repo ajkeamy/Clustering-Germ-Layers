@@ -231,7 +231,7 @@ def combine_dataframes(df_name, num_samples):
 
         ### delete starting files as they are already in either seperate
             ## meta and url CSVs or in the combined CSV
-        [os.system(f"rm -r -f {file}") for file in file_lst]
+        [os.remove(file) for file in file_lst]
         return df
 
     meta, url = read_concat(df_name), read_concat(f"{df_name}_url")

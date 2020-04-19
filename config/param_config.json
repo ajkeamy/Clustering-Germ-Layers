@@ -5,13 +5,13 @@
     "file_names" : ["Q1.csv", "Q2.csv"],
     "sort_using" : ["Size", "Project"],
     "sort_direction": ["uP", "up"],
-    "samples": [133, 324 ],
+    "samples": [133, 272],
     "time_wait" : 2,
     "implicit_wait" : 3,
     "after_sort_wait" : 5,
     "manual_csv_files" : ["Q1.csv"],
     "download_inds" : ["1-2,7-12"],
-    "keep_tar" : true,
-    "tar_dir" : "test/tars",
-    "maf_dir": "test/mafs"
+    "keep_tar" : false,
+    "tar_dir" : "testdata/tars",
+    "maf_dir": "testdata/mafs"
 }
