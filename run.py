@@ -4,12 +4,6 @@
     ## py run.py queryData config/param_config.json config/query_config.json
     ## py run.py downloadData config/param_config.json
 
-######### EXAMPLE COMMANDS
-## do these in order:
-    ## py run.py createDict config/param_config.json
-    ## py run.py queryData config/param_config.json config/query_config.json
-    ## py run.py downloadData config/param_config.json
-
 import os
 import sys
 # import json
