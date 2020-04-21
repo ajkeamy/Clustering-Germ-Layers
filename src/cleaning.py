@@ -25,7 +25,7 @@ def glob_glob(pattern):
 
 def check_driver_location(path):
     assert check_file(path), "Invalid Chrome Driver Location"
-    assert path.endswith('exe'), "Chrome Driver needs to be an executable"
+    assert path.endswith('exe'), "Chrome Driver must have an executable extension"
 
 def check_file(path, dir = False, make = False):
     path = os.path.join(*path.split('/'))
@@ -35,7 +35,7 @@ def check_file(path, dir = False, make = False):
             os.mkdir(path)
             present = True
         return present
-    return os.path.isfile(path)
+    return os.path.exists(path)
 
 
 ################################## Data Dictionary Creation Functions
@@ -231,7 +231,7 @@ def combine_dataframes(df_name, num_samples):
 
         ### delete starting files as they are already in either seperate
             ## meta and url CSVs or in the combined CSV
-        [os.system(f"rm -r -f {file}") for file in file_lst]
+        [os.remove(file) for file in file_lst]
         return df
 
     meta, url = read_concat(df_name), read_concat(f"{df_name}_url")
@@ -303,3 +303,25 @@ def maf_extract_move(maf_dir, target_dir):
                 print(f'{file} already exists in {target_dir}')
             else:
                 shutil.move(os.path.join(curr_dir, file), target_dir)
+
+def remove_file_dir(dir_path, files, keep_tar = False):
+    if keep_tar:
+        if files:
+            [os.remove(os.path.join(dir_path, file))
+                for file in os.listdir(dir_path)
+                    if (not file.endswith('.tar.gz'))
+                        and os.path.isfile(os.path.join(dir_path, file))]
+        else:
+            [shutil.rmtree(os.path.join(dir_path, dir_))
+                for dir_ in os.listdir(dir_path)
+                    if (not dir_.endswith('.tar.gz'))
+                        and os.path.isdir(os.path.join(dir_path, dir_))]
+    else:
+        if files:
+            [os.remove(os.path.join(dir_path, file))
+                for file in os.listdir(dir_path)
+                    if os.path.isfile(os.path.join(dir_path, file))]
+        else:
+            [shutil.rmtree(os.path.join(dir_path, dir_))
+                for dir_ in os.listdir(dir_path)
+                    if os.path.isdir(os.path.join(dir_path, dir_))]

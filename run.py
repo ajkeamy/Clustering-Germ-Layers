@@ -1,3 +1,4 @@
+
 ######### EXAMPLE COMMANDS
 ## do these in order:
     ## py run.py createDict config/param_config.json
@@ -45,11 +46,11 @@ if __name__ == "__main__":
                 print(f'{args[3]} does not exist')
 
     elif 'downloadData' in args[1]:
-        print('Order after queryData is Parameter.json <[CSVs]>')
+        print('Order after queryData is Parameter.json <[CSVs/CSV patterns]>')
         print('CSVs can be obtained through * pattern or from json file.')
         print('However, make sure indicies in json file match.\n')
 
-        print("Addition of command line patterns will override all manually " +
+        print("Addition of command line patterns will override all " +
               "entered csv files from Parameters.json file,\n")
 
         inp = input("Did your parameters fit this order? (y/n) \n")

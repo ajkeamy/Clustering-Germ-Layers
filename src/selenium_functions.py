@@ -98,24 +98,20 @@ def enter_query(driver, query, enter = True):
             elem.click() ## reset error message state
 
             assert False, ("Query is invalid. Please try again. \n" +
-                                   f"Query is currently \"{query}\" \n" +
-                                   f"Error message: \"{error_msg}\"")
+                           f"Query is currently \"{query}\" \n" +
+                           f"Error message: \"{error_msg}\"")
 
         button_click(driver, ".btn.btn-primary.btn-success")
     return query_box
 
-def results_check(driver, query, first_page = True):
+def results_check(driver, query, first_page = False):
     div_attr = "position: relative; width: 100%; min-height: 387px;"
     div_box = driver.find_element_by_css_selector(f"div[style=\"{div_attr}\"]")
 
     ### oddly, in pages after the first, can't scrape to know if no results
     if (div_box.text is None ) or (div_box.text == 'No results found'):
         if first_page:
-            print(f"Current query \"{query}\" has no results.")
-        else:
-            print(f"\nCurrent query \"{query}\" does not have enough results to "+
-                  "satisfy num_samples. \nInstead, table will only go up to " +
-                  "maximum possible results.\n")
+            print(f"\nCurrent query \"{query}\" has no results.\n")
         return False
     return True
 
@@ -287,18 +283,29 @@ def perform_query(driver, query, params, df_name, num_samples = 150):
     if df_name.endswith('.csv') == False:
         df_name = df_name + '.csv'
 
+    if num_samples > 1000:
+        num_samples = 1000
+    num_samples = int(num_samples)
+
     ## inputs query into query box and runs it
     enter_query(driver, query)
-
     ## if query has no results, then leave early
-    if results_check(driver, query) == False:  return
+    if results_check(driver, query, True) == False:  return
+
+    sort_data(driver, params)
+    time.sleep(after_sort_wait) ## needs longer time to sort so doesn't break
+    # curr_url = driver.current_url
 
     ## alternative way using selenium
-    # new_url = change_amount_viewed(driver)
-    # new_url_lst = get_new_urls(driver)
+    new_url = change_amount_viewed(driver)
+    driver.get(new_url)
+    driver.implicitly_wait(implicit_wait)
+    new_url_lst = get_new_urls(driver)
 
-    new_url = str_change_amount_viewed(driver.current_url)
-    new_url_lst = str_get_new_urls(new_url, num_samples)
+    ### alternative ways using string manipulation based on how url is designed
+    # new_url = str_change_amount_viewed(driver.current_url)
+    # new_url_lst = str_get_new_urls(new_url, num_samples)
+    # new_url_lst = [str_change_amount_viewed(driver.current_url, num_samples)]
 
     for index, url in enumerate(new_url_lst):
         driver.execute_script("window.open('');")
@@ -309,10 +316,7 @@ def perform_query(driver, query, params, df_name, num_samples = 150):
         driver.implicitly_wait(implicit_wait)
 
         #### if current page has no results, then stop downloads
-        if results_check(driver, query, False) == False:  break
-
-        sort_data(driver, params)
-        time.sleep(after_sort_wait) ## needs longer time to sort so doesn't break
+        if results_check(driver, query) == False:  break
 
         ### table grabbing
         table = driver.find_element_by_id("repository-files-table")
@@ -358,6 +362,10 @@ def tcga_scrape(param_file, query_file):
 
     driver = chrome_setup(params)
 
+    print("\nIf query does not have enough results to satisfy num_samples, " +
+          "table will only go up to maximum possible results.\n")
+    print("The maximum amount of entries placed into CSV is 1000.")
+
     for index, query in enumerate(assembled_query):
         name = str(f'Query_{index}.csv')
         if present_dict["file_names"]:
@@ -378,16 +386,17 @@ def download_data(param_file, csv_patterns = None):
     csv_lst = []
 
     params = json_load(param_file)
-    if csv_patterns:
-        for pattern in csv_patterns:
-            csv_lst += glob_glob(pattern)
-
-        csv_lst = [file for file in csv_lst if file.endswith('.csv')]
-        csv_lst = list(set(csv_lst))
 
     if 'manual_csv_files' in params.keys():
         csv_lst = set(params['manual_csv_files'])
         csv_lst = [file for file in csv_lst if check_file(file)]
+
+    if csv_patterns is not None:
+        for pattern in csv_patterns:
+            csv_lst += glob_glob(pattern)
+
+            csv_lst = [file for file in csv_lst if file.endswith('.csv')]
+            csv_lst = list(set(csv_lst))
 
     assert csv_lst != [], 'No matching CSV files found by pattern or by name.'
 
@@ -418,12 +427,11 @@ def downloader(driver, params, csv_lst):
     maf_extract_move(tar_dir, maf_dir)
 
     if keep_tar_files:
-        [os.system(f'rm -r -f {os.path.join(tar_dir, file)}')
-         for file in os.listdir(tar_dir) if not file.endswith('.tar.gz')]
+        remove_file_dir(tar_dir, True, True)
+        remove_file_dir(tar_dir, False, True)
     else:
-        [os.system(f'rm -r -f {os.path.join(tar_dir, file)}')
-         for file in os.listdir(tar_dir)]
-
+        remove_file_dir(tar_dir, True)
+        remove_file_dir(tar_dir, False)
 
 
 if __name__ == "__main__":
