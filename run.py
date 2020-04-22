@@ -5,9 +5,18 @@
     ## py run.py queryData config/param_config.json config/query_config.json
     ## py run.py downloadData config/param_config.json
 
+"""
+Run.py is the main file ran on the command line by users. It uses the
+functions from selenium_functions and cleaning to perform.
+
+Currently choices are only createDict, queryData, downloadData. Entering these
+without the files will prompt a question to ensure that users know the files
+that are needed.
+"""
+
+####### imports to check files exist and user arguments
 import os
 import sys
-# import json
 
 sys.path.insert(0, 'src')
 from selenium_functions import get_keywords, tcga_scrape, download_data

@@ -1,17 +1,36 @@
 
+"""
+Selenium_functions.py houses only functions that require the use of selenium or
+the timing functions that pauses selenium so selenium works as intended.
+All other functions that are used are placed in cleaning.py.
+"""
+
+####################################################################### imports
+######### selenium specific imports
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
 
+######## imports to be used in conjunction with selenium
+    #### non-selenium functions in cleaning.py
 import time
 from cleaning import *
 
+####### default time values used if not specified in param file
 time_wait = 3
 implicit_wait = 3
 after_sort_wait = 6
 
 ############################### functions used in multiple command line actions
 def button_click(driver, css_tag, sleep = True):
+    """
+    Finds an object by its css selector and clicks on it
+
+    @param driver: selenium webdriver.Chrome object;
+    @param css_tag: str; css location tag of object want to be click on
+    @param sleep: bool; if you want to sleep after clicking button
+    @return box: webElement object that was clicked on
+    """
     try:
         box = driver.find_element_by_css_selector(css_tag)
         box.click()
@@ -22,6 +41,11 @@ def button_click(driver, css_tag, sleep = True):
         return None
 
 def accept_gov_warning(driver, start = False):
+    """
+    Entering TCGA website and accepting the goverment data warning at start
+    @param driver: selenium webdriver.Chrome object;
+    @param start (opt.): bool; only accept or go to TCGA then accept
+    """
     if start:
         driver.get('https://portal.gdc.cancer.gov/query')
         driver.implicitly_wait(implicit_wait)
@@ -30,6 +54,12 @@ def accept_gov_warning(driver, start = False):
     button_click(driver, ".undefined.button.css-oe4so")
 
 def time_change(params):
+    """
+    Changes times to specified values if given in param config file,
+    otherwise the times stay at their default values
+
+    @param params: dict; dictionary from param config file
+    """
     for key,item in params.items():
         if key == 'time_wait':
             global time_wait;           time_wait = item
@@ -39,8 +69,13 @@ def time_change(params):
             global after_sort_wait;     after_sort_wait = item
 
 
-############################### chrome initializations before running
+######################################### chrome initializations before running
 def convert_to_headless(chrome_options):
+    """
+    Change Options object to so driver is headless and return changed version
+    @param chrome_options: Options object
+    """
+
     ## browser is "headless" meaning it doesn't appear when running
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--window-size=1920x1080")
@@ -53,6 +88,13 @@ def chrome_warning():
           "chromedriver.chromium.org/downloads to download the right one.")
 
 def chrome_setup(params, download = False):
+    """
+    Set up chromedriver based on param file and accept warning so ready to go
+
+    @param params: dict; dictionary from param config file
+    @param download (opt.): bool; if True, add arguments for download location
+    """
+
     chrome_warning()
 
     headless_check = ('headless' in params.keys()) and (params['headless'])
@@ -76,8 +118,14 @@ def chrome_setup(params, download = False):
     return driver
 
 
-################################## query functions
+############################################################### query functions
 def enter_query(driver, query, enter = True):
+    """
+    @param driver
+    @param query: string; string query made from query_assemble
+    @param enter (optional): if True, run query. Otherwise only enter query
+    @return query_box: webElement where query is entered into
+    """
     ## inputs query into query box
     query_box = driver.find_element_by_id('gql')
     query_box.clear()
@@ -105,6 +153,15 @@ def enter_query(driver, query, enter = True):
     return query_box
 
 def results_check(driver, query, first_page = False):
+    """
+    Checks if no results occur for query. This avoids breaking the code as the
+    table is not created if there are no entries for it to display.
+
+    @param driver
+    @param query; str; query string that is entered in enter_query
+    @param first page (optional): bool; True if in first page of query results
+    @return bool; True if there are results on the page. False otherwise
+    """
     div_attr = "position: relative; width: 100%; min-height: 387px;"
     div_box = driver.find_element_by_css_selector(f"div[style=\"{div_attr}\"]")
 
@@ -116,8 +173,18 @@ def results_check(driver, query, first_page = False):
     return True
 
 
-############################# data dictionary creator
+####################################################### data dictionary creator
 def get_keywords(param_file, data_file = None):
+    """
+    Creates the data_dictionary file by going through all keywords in TCGA's
+    query (possible by using a vague query entry) and saves this file to
+    data_file or params['data_dict'].
+
+    @param param_file: string; path for param config file
+    @param data_file (optional): string; path to data_file
+    """
+
+
     assert param_file.endswith('.json'), ("Invalid file chosen. Param config " +
                                              "needs to be a json file.")
 
@@ -163,7 +230,7 @@ def get_keywords(param_file, data_file = None):
 
         times = 10 # normal amount as 10 downs gives max number of new results (10)
 
-        if start:
+        if start: # 10 down works for everyone except for the first time
             times = 19 #down 19 times to get from element 1 to 20 so all 10 are new
             start = False
 
@@ -178,8 +245,17 @@ def get_keywords(param_file, data_file = None):
     print("FINISHED")
 
 
-####################### data layout changes (url manipulation using selenium)
+######################### data layout changes (url manipulation using selenium)
 def change_amount_viewed(driver, size = 100):
+    """
+    Goes to show entries dropdown and get url for different sizes. Returns the
+    url for the size specified by size.
+
+    @param driver
+    @param size: int; size of entries wanted to view
+    @return new_url; string; url that shows size entries per page
+    """
+
     ### click on div above the dropdown menu (stops error behavior)
     button_click(driver, 'div[style="display: flex; flex-direction: row;' +
         ' box-sizing: border-box; position: relative; outline: none; ' +
@@ -194,12 +270,22 @@ def change_amount_viewed(driver, size = 100):
 
     new_url = ''
     for i in size_elems[1:]:
-        if i.text == str(size):
+        if i.text == str(size): ## checks tag is the specified size
             new_url = i.find_element_by_tag_name('a').get_attribute('href')
             break
     return new_url
 
 def get_new_urls(driver):
+    """
+    This version only works with sizes of less than 1000 entries but avoids
+    the bugs from the string version that occur randomly. So sometimes the
+    string version works but it is inconsistent.
+
+    @return offset_url_lst: list of strings; list of urls for up to the
+        next 1000 entries broken into sections of 100. So max length is 10.
+    """
+
+
     elem = driver.find_element_by_css_selector(f"div[style=\"display: flex; "+
             "flex-direction: row; box-sizing: border-box; position: relative; "+
             "outline: none; margin-left: auto;\"]")
@@ -224,9 +310,14 @@ def get_new_urls(driver):
     return offset_url_lst
 
 
-######################## data sorting done once before the queries are run
+############################# data sorting done once before the queries are run
 def sort_data(driver, param_config):
-    """ param_config is a dictionary from param_config.json """
+    """
+    Sorts the data based on chosen characteristics in the param config file.
+
+    @param driver
+    @param param_config: dict; dictionary from param config file
+    """
 
     ### don't need to sort by anything if given nothing to sort by
     if 'sort_using' not in param_config.keys():
@@ -275,10 +366,18 @@ def sort_data(driver, param_config):
                 assert False, "Sort Directions should be either UP or DOWN"
 
 
-########################### ran by each query and assembles dataframe
+##################################### ran by each query and assembles dataframe
 def perform_query(driver, query, params, df_name, num_samples = 150):
     """
-    @param df_name: should be name excluding the extension
+    Query is entered and a csv, with num_samples rows, is created from table
+    that results from running the query. A CSV temp file is made for each page
+    and they are combined in the end, with the temps being deleted.
+
+    @param driver
+    @param query; string; query to be entered into TCGA
+    @param params: dict; dictionary from param config file
+    @param df_name: name of the file to write to, including the extension
+    @pram num_samples (opt.): int; number of samples wanted in the created csv
     """
     if df_name.endswith('.csv') == False:
         df_name = df_name + '.csv'
@@ -307,10 +406,12 @@ def perform_query(driver, query, params, df_name, num_samples = 150):
     # new_url_lst = str_get_new_urls(new_url, num_samples)
     # new_url_lst = [str_change_amount_viewed(driver.current_url, num_samples)]
 
+    ### goes through all the list of pages until hit num_samples rows
+        ## goes to new tab and goes back to original tab after downloading page
     for index, url in enumerate(new_url_lst):
-        driver.execute_script("window.open('');")
+        driver.execute_script("window.open('');") # open new tab
 
-        # Switch to the new window
+        # Switch to the new tab
         driver.switch_to.window(driver.window_handles[1])
         driver.get(url)
         driver.implicitly_wait(implicit_wait)
@@ -333,22 +434,28 @@ def perform_query(driver, query, params, df_name, num_samples = 150):
         ### switch to starting tab
         driver.switch_to.window(driver.window_handles[0])
 
+    ## combine created CSVs so its not several smaller 100 row files
     combine_dataframes(df_name[:-4], num_samples)
 
 
-############ Combines all functions to scrape URLs using configuration files
+############### Combines all functions to scrape URLs using configuration files
 def tcga_scrape(param_file, query_file):
     """
+    Main scraping function that uses config files to assemble the queries to
+    run. Then, iterates through all the queries and makes a new CSV per.
 
+    @param param_file: str; path that goes to the param config file
+    @param query_file: str; path that goes to the query config file
     """
     assert param_file.endswith('.json'), ("Invalid file chosen. Param config " +
                                              "needs to be a json file.")
     assert query_file.endswith('.json'), ("Invalid file chosen. Query config " +
                                              "needs to be a json file.")
-
+    ### load files into a dictionary
     params = json_load(param_file)
     queries = json_load(query_file)
 
+    ### config + assemble turn query from dictionary into list of strings
     query_dict = query_config(queries)
 
     data_dict = None
@@ -356,6 +463,8 @@ def tcga_scrape(param_file, query_file):
         data_dict = params['data_dict']
     assembled_query = query_assemble(query_dict, data_dict)
 
+    ### precheck to make sure everything works so don't
+        ### need to init if variables dont work
     present_dict = pre_scraping_config_check(params, query_dict)
 
     ########## Reached here means config files are valid
@@ -366,6 +475,7 @@ def tcga_scrape(param_file, query_file):
           "table will only go up to maximum possible results.\n")
     print("The maximum amount of entries placed into CSV is 1000.")
 
+    ### performs a query for each query in list of queries
     for index, query in enumerate(assembled_query):
         name = str(f'Query_{index}.csv')
         if present_dict["file_names"]:
@@ -381,12 +491,19 @@ def tcga_scrape(param_file, query_file):
     print("FINISHED")
 
 
-#################################### Download Data
+################################################################# Download Data
 def download_data(param_file, csv_patterns = None):
+    """
+    Sets up downloading of the data and downloader does the actual downloading
+
+    @param param_file: str; path to param config file
+    @param csv_patterns (opt.): list of strings; patterns to identify csvs
+    """
     csv_lst = []
 
     params = json_load(param_file)
-
+    #### will use manually entered csv files from param
+        ### unless given in command line
     if 'manual_csv_files' in params.keys():
         csv_lst = set(params['manual_csv_files'])
         csv_lst = [file for file in csv_lst if check_file(file)]
@@ -404,36 +521,51 @@ def download_data(param_file, csv_patterns = None):
     downloader(driver, params, csv_lst)
 
 def downloader(driver, params, csv_lst):
+    """
+    Downloads tar files to specified tar directory and then extracts them to
+    place the created maf.gz files in the maf directory. Afterwards, deletes
+    all unnecessary folders and files unless user wants to keep tar files.
+
+    @param driver
+    @param params: dict; dictionary from param config file
+    @param csv_lst: list of strings; path locations to all CSV files to use
+    """
+
     tar_dir = os.path.join(*params['tar_dir'].split('/'))
     maf_dir = os.path.join(*params['maf_dir'].split('/'))
     keep_tar_files = params['keep_tar']
 
+    ### Number of CSV files must match to indicies,
+        ### otherwise unsure what files user wants to download
     assert check_file(tar_dir, True), f'{tar_dir} does not exist'
     assert len(params['download_inds']) == len(csv_lst), (
                 "Download indicies do not match to csv_files")
 
+    ### goes through all the indicies in each CSV to download file
     for index, ind in enumerate(array_conv(params['download_inds'])):
         assert csv_lst[index].endswith('csv'), "Invalid File "
         links = pandas_reindex(csv_lst[index],ind)
 
-        for link in links:
+        for link in links: ## uses link specified in CSV file to go to page
             driver.get(link)
             driver.implicitly_wait(implicit_wait)
 
             accept_gov_warning(driver)
             button_click(driver, ".test-download-button.button")
 
+    time.sleep(time_wait)
     driver.close()
-    maf_extract_move(tar_dir, maf_dir)
+    maf_extract_move(tar_dir, maf_dir) ## extract and move maf files
 
-    if keep_tar_files:
+    if keep_tar_files: ## determines which files to keep from download
         remove_file_dir(tar_dir, True, True)
         remove_file_dir(tar_dir, False, True)
     else:
         remove_file_dir(tar_dir, True)
         remove_file_dir(tar_dir, False)
 
-
+####### example uses of main functions that users will only interact with
+    ### rest of functions are helpers for these
 if __name__ == "__main__":
     get_keywords('config/param_config.json')
     tcga_scrape('config/param_config.json', 'config/query_config.json')
