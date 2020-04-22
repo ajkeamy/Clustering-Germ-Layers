@@ -1,6 +1,6 @@
 {
     "chrome_driver_location" : "chromedriver.exe",
-    "headless" : false,
+    "headless" : true,
     "data_dict": "references/data_dictionary.csv",
     "file_names" : ["Q1.csv", "Q2.csv"],
     "sort_using" : ["Size", "Project"],
