@@ -178,7 +178,10 @@ Parameter file keys are the only ones included here as all information on the qu
     This downloads the files at these positions from the specified CSV files. \
     **WARNING** : As the first row of the CSV file is the column names, row 2 is the first data value and python starts at a 0 index so [1] points to the 3rd row in the CSV file. 
 
-- keep_tar_files, tar_dir, maf_dir 
+- keep_tar_files, tar_dir, maf_dir    
     - keep_tar_files is a boolean, that when True, says to keep the downloaded tar files along with the extracted maf.gz files. Otherwise, only the maf.gz files.
     - tar_dir is the directory where the chromedriver will save the downloaded tar files into.
     - maf_dir is the directory that the extracted maf.gz and corresponding annotation files are placed into.
+
+    **WARNING**:  If there is an outer directory used by tar_dir and maf_dir and it is not created before running downloadData, the code will break.
+    - In the param_config.json example, the testdata directory must be made in advance. However, the individual directories of tar_dir and maf_dir will be made through the code if they do not already exist.
