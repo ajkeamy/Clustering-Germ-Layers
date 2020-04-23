@@ -140,7 +140,8 @@ Parameter file keys are the only ones included here as all information on the qu
     - This file is only to locally see all the keys, types, and descriptions, as well as to help fix some user input errors in queryData.
 
 - headless \
-    Set to False if want to see movement across the site. **WARNING**: Webpages load faster when True so if code breaks, then either change back or increase wait times.
+    Set to False if want to see movement across the site. \
+    **WARNING**: Webpages load faster when True so if code breaks, then either change back or increase wait times.
     
 - time_wait, implicit_wait, after_sort_wait \
     Timing variables to change. There are default values if they are not specified; however, slower connections must be fixed by increasing these times so page is loaded.
@@ -174,10 +175,10 @@ Parameter file keys are the only ones included here as all information on the qu
     - Ex. 
     > array_conv(["1-3,5", "1,3-4"]) => [[1,2,3,5], [1,3,4]]
     
-    This downloads the files at these positions from the specified CSV files. 
+    This downloads the files at these positions from the specified CSV files. \
     **WARNING** : As the first row of the CSV file is the column names, row 2 is the first data value and python starts at a 0 index so [1] points to the 3rd row in the CSV file. 
 
-- keep_tar_files, tar_dir, maf_dir \
+- keep_tar_files, tar_dir, maf_dir 
     - keep_tar_files is a boolean, that when True, says to keep the downloaded tar files along with the extracted maf.gz files. Otherwise, only the maf.gz files.
     - tar_dir is the directory where the chromedriver will save the downloaded tar files into.
     - maf_dir is the directory that the extracted maf.gz and corresponding annotation files are placed into.
