@@ -17,8 +17,7 @@ This is done through the use of Google's chromedriver. The chromedriver.exe incl
     - Required keys: 
         - chrome_driver_location
         - data_dict (if not specified in command line)
-            - if done through command line, remember to \
-              change it in param_config to file you want to use
+            - if done through command line, remember to change it in param_config to file you want to use
     - Optional:
         - headless
         - time_wait, implicit_wait, after_sort_wait
@@ -36,12 +35,11 @@ This is done through the use of Google's chromedriver. The chromedriver.exe incl
     - Required:
         - chrome_driver_location
         - keep_tar_files, tar_dir, maf_dir
-        - manual_csv_files (if not specified by pattern \
-          on the command line)
+        - manual_csv_files (if not specified by pattern on the command line)
         - download_inds
     - Optional:
         - headless
-        - time_wait, implicit_wait, after_sort_wait
+        - time_wait, implicit_wait, after_sort_wait, download_wait
 
 
 Example:
@@ -57,6 +55,7 @@ Example:
     "time_wait" : 2,
     "implicit_wait" : 3,
     "after_sort_wait" : 5,
+    "download_wait" : 60,
     "manual_csv_files" : ["Q1.csv"],
     "download_inds" : ["1-2,7-12"],
     "keep_tar" : false,
@@ -130,6 +129,8 @@ Example:
 
 Parameter file keys are the only ones included here as all information on the query keys can be found from the data file created by createDict. Grouped if highly related.
 
+Used by more than one command
+
 - chrome_driver_location \
     Path location of the chromedriver.exe file 
 
@@ -143,19 +144,22 @@ Parameter file keys are the only ones included here as all information on the qu
     Set to False if want to see movement across the site. \
     **WARNING**: Webpages load faster when True so if code breaks, then either change back or increase wait times.
     
-- time_wait, implicit_wait, after_sort_wait \
+- time_wait, implicit_wait, after_sort_wait, download_wait \
     Timing variables to change. There are default values if they are not specified; however, slower connections must be fixed by increasing these times so page is loaded.
 
     - Time_wait is the time the code waits after each step.
     - Implicit_wait is the time the code waits after loading a new page.
     - After_sort_wait is the time waiting for the data to be sorted which usually is kept higher than the others as it takes much longer to do.
         - However, if you are not sorting the data then setting the time much longer works.
+    - Download_wait is the time that the program waits to download each file so larger files can be given more time to download.
+
+queryData
 
 - file_names \
     The list of CSV names that the queryData results will be saved to. If not specified, uses default names for queries.
 
 - samples \
-    The number of samples' metadata that is to be saved in a CSV file by each query in queryData.
+    The number of top results from a query search that will be saved to that query's CSV file. The max samples per CSV file is 1000 results.
 
 - sort_using, sort_direction \
     Before the data is scraped, it is sorted by user specifications and then the top results are saved to the CSV file in queryData. If not specified, then uses the default sorting that TCGA stores files as. 
@@ -166,9 +170,7 @@ Parameter file keys are the only ones included here as all information on the qu
         - "Up", "Down"
 
 
-
-- manual_csv_files \
-    CSV file names that hold the location of the desired files to be downloaded. If new pattern is given in command line, this is overridden by CSVs found using that pattern. However, these CSVs found using the pattern are still subject to matching the download_inds.
+downloadData
 
 - download_inds \
     Indexes of the files in manual_csv_files that want to be downloaded to make downloading specific samples easier.
@@ -185,3 +187,6 @@ Parameter file keys are the only ones included here as all information on the qu
 
     **WARNING**:  If there is an outer directory used by tar_dir and maf_dir and it is not created before running downloadData, the code will break.
     - In the param_config.json example, the testdata directory must be made in advance. However, the individual directories of tar_dir and maf_dir will be made through the code if they do not already exist.
+
+- manual_csv_files \
+    CSV file names that hold the location of the desired files to be downloaded. If new pattern is given in command line, this is overridden by CSVs found using that pattern. However, these CSVs found using the pattern are still subject to matching the download_inds.
