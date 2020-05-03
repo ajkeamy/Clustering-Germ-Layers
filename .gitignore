@@ -5,6 +5,7 @@
 
 *.csv
 !data_dictionary.csv
+!testdata/*.csv
 
 *.json
 !param_config.json
