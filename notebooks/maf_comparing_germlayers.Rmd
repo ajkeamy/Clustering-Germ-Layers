@@ -1,0 +1,104 @@
+---
+title: "MAF_Analysis"
+author: "Alexandra"
+date: "4/16/2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Import Statements
+
+```{r maf}
+library(maftools)
+
+```
+
+## Load Files
+
+
+```{r, echo=FALSE}
+#path to TCGA LAML MAF file
+# Endoderm
+kidney = read.maf("kidney_muse.maf.gz")
+
+# Ectoderm 
+breast = read.maf("breast_muse.maf.gz")
+skin = read.maf("skin_muse.maf.gz")
+
+
+#Mesoderm
+stomach = read.maf("stomach_muse.maf.gz")
+lung = read.maf("lung_muse.maf.gz")
+lungscan = read.maf("lung_varscan.maf.gz")
+
+endoderm= read.maf("endoderm.maf")
+
+```
+
+
+```{r, echo=FALSE}
+# Comparing mutated genes
+#Endoderm
+
+# Ectoderm
+getGeneSummary(ectoderm)
+
+
+```
+
+```{r, echo=FALSE}
+# Comparing mutated genes using Gene Cloud
+
+# Ectoderm
+geneCloud(input = ectoderm, minMut = 25)
+
+```
+
+
+# Plotting: Summary
+```{r, echo=FALSE}
+# Endoderm
+
+# Ectoderm
+plotmafSummary(maf = ectoderm, rmOutlier = TRUE, addStat = 'median', dashboard = TRUE)
+
+```
+
+# Plotting: oncoplots: Better representation of maf file
+```{r, echo=FALSE}
+
+# Ectoderm
+oncoplot(maf = ectoderm, top = 10, removeNonMutated = TRUE)
+
+```
+#classifies SNPs into Transitions and Transversions and returns a list of summarized tables in various ways
+```{r, echo=FALSE}
+
+#Ectoderm
+ectoderm.titv = titv(maf = ectoderm, plot = FALSE, useSyn = TRUE)
+plotTiTv(res = ectoderm.titv)
+
+
+
+```
+
+# Rainfall Parts: Cancer genomes, especially solid tumors are characterized by genomic loci with localized hyper-mutations 5. Such hyper mutated genomic regions can be visualized by plotting inter variant distance on a linear genomic scale. 
+```{r, echo=FALSE}
+# Ectoderm
+coad.rf = rainfallPlot(maf = ectoderm, detectChangePoints = TRUE, fontSize = 12, pointSize = 0.6)
+
+```
+
+# Many disease causing genes in cancer are co-occurring or show strong exclusiveness in their mutation pattern. Such mutually exclusive or co-occurring set of genes can be detected using somaticInteractions
+```{r, echo=FALSE}
+#exclusive/co-occurance event analysis on top 10 mutated genes. 
+somaticInteractions(maf = ectoderm, top = 25, pvalue = c(0.05, 0.1))
+
+```
