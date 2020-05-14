@@ -20,6 +20,7 @@ from cleaning import *
 time_wait = 3
 implicit_wait = 3
 after_sort_wait = 6
+download_wait = 15
 
 ############################### functions used in multiple command line actions
 def button_click(driver, css_tag, sleep = True):
@@ -67,6 +68,8 @@ def time_change(params):
             global implicit_wait;       implicit_wait = item
         elif key == 'after_sort_wait':
             global after_sort_wait;     after_sort_wait = item
+        elif key == "download_wait":
+            global download_wait;     download_wait = item
 
 
 ######################################### chrome initializations before running
@@ -552,6 +555,7 @@ def downloader(driver, params, csv_lst):
 
             accept_gov_warning(driver)
             button_click(driver, ".test-download-button.button")
+            time.sleep(download_wait)
 
     time.sleep(30)
     driver.close()
