@@ -553,7 +553,7 @@ def downloader(driver, params, csv_lst):
             accept_gov_warning(driver)
             button_click(driver, ".test-download-button.button")
 
-    time.sleep(time_wait)
+    time.sleep(30)
     driver.close()
     maf_extract_move(tar_dir, maf_dir) ## extract and move maf files
 
