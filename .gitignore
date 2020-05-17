@@ -3,6 +3,9 @@
 *.gz
 *.txt
 
+*.png
+*.gif
+
 *.csv
 !data_dictionary.csv
 !testdata/*.csv
