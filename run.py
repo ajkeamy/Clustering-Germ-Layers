@@ -17,6 +17,7 @@ that are needed.
 ####### imports to check files exist and user arguments
 import os
 import sys
+import subprocess
 
 sys.path.insert(0, 'src')
 from selenium_functions import get_keywords, tcga_scrape, download_data
@@ -76,3 +77,6 @@ if __name__ == "__main__":
 
     else:
         print("Choices are currently only createDict, queryDict, and downloadData")
+
+#code to product sample outputs, results can be found in testdata/samples
+subprocess.call(['/opt/conda/bin/Rscript.exe',  '--vanilla', 'outputs.r'])
