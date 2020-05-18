@@ -3,9 +3,13 @@
 *.gz
 *.txt
 
+*.png
+*.gif
+
 *.csv
 !data_dictionary.csv
 !testdata/*.csv
+!testdata/samples/*.gz
 
 *.json
 !param_config.json
