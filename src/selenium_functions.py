@@ -557,7 +557,7 @@ def downloader(driver, params, csv_lst):
             button_click(driver, ".test-download-button.button")
             time.sleep(download_wait)
 
-    time.sleep(time_wait)
+    time.sleep(30)
     driver.close()
     maf_extract_move(tar_dir, maf_dir) ## extract and move maf files
 
