@@ -79,4 +79,4 @@ if __name__ == "__main__":
         print("Choices are currently only createDict, queryDict, and downloadData")
 
 #code to product sample outputs, results can be found in testdata/samples
-subprocess.call(['/opt/conda/bin/Rscript.exe',  '--vanilla', 'outputs.r'])
+subprocess.call(['/opt/conda/bin/Rscript',  '--vanilla', 'outputs.r'])
